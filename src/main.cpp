@@ -14,9 +14,9 @@ int main()
 
     Limit limit = Limit(64.39);
     Order Buy_order = Order(5.5,Bid);
-    limit.add_order(Buy_order);
+    limit.addOrder(Buy_order);
 
-    limit.print_current_orders();
+    limit.printCurrentOrders();
 
     return 0;
 }

@@ -33,14 +33,14 @@ struct Price
     }
 
     // Struct Utilities
-    void print_price()
+    void printPrice()
     {
         print("Integral: " << integral);
         print("Fractional: " << fractional);
         print("Scaler: " << scaler);
     }
 
-    float get_price()
+    float getPrice()
     {
         return (float)((float)integral + ((float)fractional / (float)scaler));
     }
@@ -60,7 +60,7 @@ struct Order
     }
 
     // order utilities
-    void print_orders()
+    void printOrders()
     {
         print(size << "," << (type ? "Ask" : "Bid") << "\n");
     }
@@ -79,14 +79,14 @@ struct Limit
     }
 
     // Limit Functionalities
-    void print_current_orders()
+    void printCurrentOrders()
     {
         for (size_t i = 0; i < orders.size(); i++)
         {
-            (orders[i].print_orders());
+            (orders[i].printOrders());
         }
     }
-    void add_order(Order new_order)
+    void addOrder(Order new_order)
     {
         orders.push_back(new_order);
     }
@@ -94,5 +94,16 @@ struct Limit
 
 struct OrderBook
 {
+    // OrderBook Attributes
     hashmap<Price, Limit> asks, bids;
+
+    // // Constructors
+    // OrderBook(){
+    //     asks=hashmap<Price,Limit>();
+    // }
+
+    void addLimitOrder(Order newOrder){
+        
+    }
+
 };
