@@ -8,12 +8,15 @@
 #include <vector>
 #include <unordered_map>
 #include <string>
+
+
 // Namespace defines
 #define size_t std::size_t
 #define vector std::vector
 #define Hash std::hash
 #define hashmap std::unordered_map
 #define string std::string
+#define spair std::pair
 
 // utility macros
 #define print(obj) (std::cout << obj << std::endl)
@@ -28,4 +31,4 @@ enum BuyOrSell
 };
 #define BuyOrSell enum BuyOrSell
 
-
+;
