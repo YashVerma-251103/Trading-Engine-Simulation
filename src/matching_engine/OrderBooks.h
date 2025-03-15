@@ -1,6 +1,5 @@
 #include "../imports.h"
 
-
 // Engine structs
 struct Price
 {
@@ -72,6 +71,10 @@ struct Order
     {
         print(size << "," << (type ? "Ask" : "Bid") << "\n");
     }
+    bool isFilled()
+    {
+        return (size == 0.0f);
+    }
 };
 
 struct Limit
@@ -107,9 +110,32 @@ struct Limit
             (orders[i].printOrders());
         }
     }
-    void addOrder(Order *new_order)
+    void addOrder(Order *newOrder)
     {
-        orders.push_back(*new_order);
+        orders.push_back(*newOrder);
+    }
+    void fillOrder(Order *marketOrder)
+    {
+        for (auto limitOrder : orders)
+        {
+            switch (marketOrder->size >= limitOrder.size)
+            {
+            case true:
+                marketOrder->size -= limitOrder.size;
+                limitOrder.size = 0.0f;
+                break;
+            default: // false case
+                limitOrder.size -= marketOrder->size;
+                marketOrder->size = 0.0f;
+                break;
+            }
+            
+            if (marketOrder->isFilled())
+            {
+                break;
+            }
+            
+        }
     }
 };
 

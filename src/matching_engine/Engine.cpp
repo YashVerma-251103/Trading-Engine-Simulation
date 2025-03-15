@@ -54,8 +54,9 @@ struct MatchingEngine
         markets[*tp] = OrderBook();
     }
 
-    spair<char, string> place_limit_order(TradingPair *tp, float price, Order *limitOrder)
+    void place_limit_order(TradingPair *tp, float price, Order *limitOrder)
     {
+        // spair<char, string>
         if (markets.find(*tp) == markets.end())
         {
             // Orderbook for this market does not exist.
