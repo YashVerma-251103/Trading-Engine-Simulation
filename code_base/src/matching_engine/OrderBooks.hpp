@@ -1,4 +1,4 @@
-#include "../imports.h"
+#include "../defines_imports_macros/imports.hpp"
 
 // Engine structs
 struct Price
@@ -62,9 +62,12 @@ struct Order
     // struct utilities
     Order(float *order_size, BuyOrSell order_type)
     {
+        assert(order_size != nullptr);
+
         size = *order_size;
         type = order_type;
     }
+    Order(float order_size, BuyOrSell order_type) : size(order_size), type(order_type) {}
 
     // order utilities
     void printOrders()
@@ -81,17 +84,27 @@ struct Limit
 {
     // Limit Attributes
     Price price;
-    vector<Order> orders;
+    // need to change it to vector of pointer
+    vector<Order *> orders;
+    float total_volume;
 
     // Constructor
     Limit()
     {
         price = Price();
-        orders = vector<Order>();
+        orders = vector<Order *>();
+        total_volume = 0;
     }
     Limit(float price) : price(Price(price))
     {
-        orders = vector<Order>();
+        orders = vector<Order *>();
+        total_volume = 0;
+    }
+    Limit(Price *price) : price(*price)
+    {
+        assert(price != nullptr);
+        orders = vector<Order *>();
+        total_volume = 0;
     }
 
     // Limit utilities
@@ -107,35 +120,50 @@ struct Limit
     {
         for (size_t i = 0; i < orders.size(); i++)
         {
-            (orders[i].printOrders());
+            (orders[i]->printOrders());
         }
     }
     void addOrder(Order *newOrder)
     {
-        orders.push_back(*newOrder);
+        assert(newOrder != nullptr);
+        orders.push_back(newOrder);
+        total_volume += newOrder->size;
     }
-    void fillOrder(Order *marketOrder)
+
+    bool fillOrder(Order *marketOrder)
     {
-        for (auto limitOrder : orders)
+        // Checking if the market order can even be filled or not.
+        if (marketOrder->size > total_volume)
         {
-            switch (marketOrder->size >= limitOrder.size)
+            return not_filled;
+        }
+
+        assert(marketOrder->size <= total_volume);
+
+        // float nullSize = 0.0f;
+        for (auto &limitOrder : orders)
+        {
+            if (marketOrder->size >= limitOrder->size)
             {
-            case true:
-                marketOrder->size -= limitOrder.size;
-                limitOrder.size = 0.0f;
-                break;
-            default: // false case
-                limitOrder.size -= marketOrder->size;
-                marketOrder->size = 0.0f;
-                break;
+
+                marketOrder->size -= limitOrder->size;
+                total_volume -= limitOrder->size;
+                limitOrder->size = 0.0f;
+                // should i remove this filled order from limit ?
             }
-            
+            else
+            { // false case
+                limitOrder->size -= marketOrder->size;
+                total_volume -= marketOrder->size;
+                marketOrder->size = 0.0f;
+            }
+
             if (marketOrder->isFilled())
             {
                 break;
             }
-            
         }
+        return filled;
     }
 };
 
@@ -189,11 +217,25 @@ struct OrderBook
         printBidOrders();
         printAskOrders();
     }
+    vector<Limit *> getAskLimits()
+    {
+        // TODO : return a vector of limit pointers sorted in descending order of price.
+        vector<Limit *> list_of_limits = vector<Limit *>();
+        for (auto &pair : asks)
+        {
+        }
+    }
+    vector<Limit *> getBidLimits()
+    {
+        // TODO : return a vector of limit pointers sorted in ascending order of price.
+        
+    }
 
     // Orderbook functionalities
     void addLimitOrder(Order *newOrder, Price *orderPrice)
     {
         assert(newOrder != nullptr);
+        assert(orderPrice != nullptr);
 
         switch (newOrder->type)
         {
@@ -225,6 +267,23 @@ struct OrderBook
         default:
 
             break;
+        }
+    }
+    bool fillMarketOrder(Order *newOrder)
+    {
+        // the major confusion i have -> since we are filling the market order using the highest limits first, then does it not mean that there is some missed amount of money as not all limits are of same price. but the market order is of fixed price.
+
+        switch (newOrder->type)
+        {
+        case Bid:
+        {
+
+            break;
+        }
+        default:
+        {
+            break;
+        }
         }
     }
 };

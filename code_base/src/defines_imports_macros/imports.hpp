@@ -31,4 +31,8 @@ enum BuyOrSell
 };
 #define BuyOrSell enum BuyOrSell
 
-;
+
+
+// Defines for orders for better understanding
+#define filled true
+#define not_filled false
