@@ -25,6 +25,30 @@ struct Price
     {
         return ((integral == otherPrice.integral) && (fractional == otherPrice.fractional) && (scaler == otherPrice.scaler));
     }
+    bool operator>(const Price &otherPrice) const
+    {
+        if (integral > otherPrice.integral)
+        {
+            return true;
+        }
+        else if (integral == otherPrice.integral)
+        {
+            return (fractional > otherPrice.fractional);
+        }
+        return false;
+    }
+    bool operator>=(const Price &otherPrice) const
+    {
+        if (integral > otherPrice.integral)
+        {
+            return true;
+        }
+        else if (integral == otherPrice.integral)
+        {
+            return (fractional >= otherPrice.fractional);
+        }
+        return false;
+    }
 
     void printPrice() const
     {
@@ -83,7 +107,7 @@ struct Order
 struct Limit
 {
     // Limit Attributes
-    Price price;
+    Price *price;
     // need to change it to vector of pointer
     vector<Order *> orders;
     float total_volume;
@@ -91,16 +115,16 @@ struct Limit
     // Constructor
     Limit()
     {
-        price = Price();
+        price = &(Price());
         orders = vector<Order *>();
         total_volume = 0;
     }
-    Limit(float price) : price(Price(price))
+    Limit(float price) : price(&(Price(price)))
     {
         orders = vector<Order *>();
         total_volume = 0;
     }
-    Limit(Price *price) : price(*price)
+    Limit(Price *price) : price(price)
     {
         assert(price != nullptr);
         orders = vector<Order *>();
@@ -110,11 +134,11 @@ struct Limit
     // Limit utilities
     void updatePrice(Price *newPrice)
     {
-        price = *newPrice;
+        price = newPrice;
     }
     void updatePrice(float *newPrice)
     {
-        price = Price(*newPrice);
+        price = &(Price(*newPrice));
     }
     void printCurrentOrders()
     {
@@ -170,11 +194,11 @@ struct Limit
 struct OrderBook
 {
     // OrderBook Attributes
-    hashmap<Price, Limit> asks, bids;
-    // hashmap<Price, Limit, PriceHash> asks, bids;
+    hashmap<Price *, Limit *> asks, bids;
+    vector<Limit *> asks_asc, asks_decs, bids_asc, bids_decs;
 
     // hashmap functions
-    hashmap<Price, Limit>::iterator begin(hashmap<Price, Limit> &orderMaps)
+    hashmap<Price *, Limit *>::iterator begin(hashmap<Price *, Limit *> &orderMaps)
     {
         return orderMaps.begin();
     }
@@ -182,33 +206,31 @@ struct OrderBook
     // Constructors
     OrderBook()
     {
-        bids = hashmap<Price, Limit>();
-        asks = hashmap<Price, Limit>();
+        bids = hashmap<Price *, Limit *>();
+        asks = hashmap<Price *, Limit *>();
     }
 
     // OrderBook utilities
     void printBidOrders()
     {
         print("Bid Orders : \n");
-        for (const auto &pair : bids)
+        for (auto &pair : bids)
         {
             // Limit limit = bids[pair.first];
-            Limit limit = pair.second;
             print_ne("Current Price -> ");
-            pair.first.printPrice();
-            limit.printCurrentOrders();
+            pair.first->printPrice();
+            pair.second->printCurrentOrders();
             print("\n\n");
         }
     }
     void printAskOrders()
     {
         print("Ask Orders : \n");
-        for (const auto &pair : asks)
+        for (auto &pair : asks)
         {
-            Limit limit = pair.second;
             print_ne("Current Price -> ");
-            pair.first.printPrice();
-            limit.printCurrentOrders();
+            pair.first->printPrice();
+            pair.second->printCurrentOrders();
             print("\n\n");
         }
     }
@@ -217,18 +239,65 @@ struct OrderBook
         printBidOrders();
         printAskOrders();
     }
-    vector<Limit *> getAskLimits()
-    {
-        // TODO : return a vector of limit pointers sorted in descending order of price.
-        vector<Limit *> list_of_limits = vector<Limit *>();
-        for (auto &pair : asks)
-        {
-        }
-    }
-    vector<Limit *> getBidLimits()
+    // vector<Limit *> *getAskLimits(bool reverse = false)
+    // {
+    //     // TODO : return a vector of limit pointers sorted in descending order of price.
+    //     vector<Limit *> list_of_limits = vector<Limit *>();
+    //     vector<Price *> list_of_prices = vector<Price *>();
+    // 
+    //     for (auto &pair : asks)
+    //     {
+    //         list_of_prices.push_back(pair.first);
+    //     }
+    // 
+    //     vector_sort(&list_of_prices, &reverse, 0, list_of_prices.size() - 1);
+    // 
+    //     for (auto &price : list_of_prices)
+    //     {
+    //         list_of_limits.push_back(asks[price]);
+    //     }
+    // 
+    //     return &list_of_limits;
+    // }
+    // vector<Limit *> *getBidLimits(bool reverse = false)
+    // {
+    //     // TODO : return a vector of limit pointers sorted in ascending order of price.
+    //     vector<Limit *> list_of_limits = vector<Limit *>();
+    //     vector<Price *> list_of_prices = vector<Price *>();
+    // 
+    //     for (auto &pair : bids)
+    //     {
+    //         list_of_prices.push_back(pair.first);
+    //     }
+    //  
+    //     vector_sort(&list_of_prices, &reverse, 0, list_of_prices.size() - 1);
+    // 
+    //     for (auto &price : list_of_prices)
+    //     {
+    //         list_of_limits.push_back(bids[price]);
+    //     }
+    // 
+    //     return &list_of_limits;
+    // }
+    vector<Limit *> *getLimits(hashmap<Price*, Limit*> *bid_ask ,bool reverse = false)
     {
         // TODO : return a vector of limit pointers sorted in ascending order of price.
-        
+        vector<Limit *> list_of_limits = vector<Limit *>();
+        vector<Price *> list_of_prices = vector<Price *>();
+
+        for (auto &pair : *bid_ask)
+        {
+            list_of_prices.push_back(pair.first);
+        }
+
+        vector_sort(&list_of_prices, &reverse, 0, list_of_prices.size() - 1);
+
+        for (auto &price : list_of_prices)
+        {
+            list_of_limits.push_back((*bid_ask)[price]);
+        }
+
+        return &list_of_limits;
     }
 
     // Orderbook functionalities
@@ -241,27 +310,23 @@ struct OrderBook
         {
         case Bid:
         {
-            // Price price = Price(orderPrice);
-            Limit limit = bids[*orderPrice];
             // this will create a new limit at the price if it is not present so it saves time.
-            if (limit.price.integral < 0)
+            if (bids[orderPrice]->price->integral < 0)
             {
-                limit.updatePrice(orderPrice);
+                bids[orderPrice]->updatePrice(orderPrice);
             }
-            limit.addOrder(newOrder);
+            bids[orderPrice]->addOrder(newOrder);
 
             break;
         }
         case Ask:
         {
-            // Price price = Price(orderPrice);
-            Limit limit = asks[*orderPrice];
             // this will create a new limit at the price if it is not present so it saves time.
-            if (limit.price.integral < 0)
+            if (asks[orderPrice]->price->integral < 0)
             {
-                limit.updatePrice(orderPrice);
+                asks[orderPrice]->updatePrice(orderPrice);
             }
-            limit.addOrder(newOrder);
+            asks[orderPrice]->addOrder(newOrder);
             break;
         }
         default:
