@@ -1,82 +1,6 @@
 #include "../defines_imports_macros/imports.hpp"
 
 // Engine structs
-struct Price
-{
-    // Price Attributes
-    int integral, fractional, scaler;
-
-    // Constructor
-    Price()
-    {
-        scaler = 100;
-        integral = -1;
-        fractional = 0;
-    }
-    Price(float price)
-    {
-        scaler = 100;
-        integral = (int)price;
-        fractional = (int)((price - integral) * scaler);
-    }
-
-    // Struct Utilities
-    bool operator==(const Price &otherPrice) const
-    {
-        return ((integral == otherPrice.integral) && (fractional == otherPrice.fractional) && (scaler == otherPrice.scaler));
-    }
-    bool operator>(const Price &otherPrice) const
-    {
-        if (integral > otherPrice.integral)
-        {
-            return true;
-        }
-        else if (integral == otherPrice.integral)
-        {
-            return (fractional > otherPrice.fractional);
-        }
-        return false;
-    }
-    bool operator>=(const Price &otherPrice) const
-    {
-        if (integral > otherPrice.integral)
-        {
-            return true;
-        }
-        else if (integral == otherPrice.integral)
-        {
-            return (fractional >= otherPrice.fractional);
-        }
-        return false;
-    }
-
-    void printPrice() const
-    {
-        // print("Integral: " << integral);
-        // print("Fractional: " << fractional);
-        // print("Scaler: " << scaler);
-        print("Integral: " << integral << " | Fractional: " << fractional << " | Scaler: " << scaler);
-    }
-
-    float getPrice()
-    {
-        return (float)((float)integral + ((float)fractional / (float)scaler));
-    }
-};
-
-namespace std
-{
-    template <>
-    struct hash<Price>
-    {
-        auto operator()(const Price &price) const
-        {
-            return ((Hash<int>()(price.integral)) ^ (Hash<int>()(price.fractional)) ^ (Hash<int>()(price.scaler)));
-        }
-    };
-
-} // namespace std
-
 struct Order
 {
     // order attribute
@@ -208,6 +132,10 @@ struct OrderBook
     {
         bids = hashmap<Price *, Limit *>();
         asks = hashmap<Price *, Limit *>();
+        bids_asc = vector<Limit *>();
+        bids_decs = vector<Limit *>();
+        asks_asc = vector<Limit *>();
+        asks_decs = vector<Limit *>();
     }
 
     // OrderBook utilities
@@ -239,46 +167,6 @@ struct OrderBook
         printBidOrders();
         printAskOrders();
     }
-    // vector<Limit *> *getAskLimits(bool reverse = false)
-    // {
-    //     // TODO : return a vector of limit pointers sorted in descending order of price.
-    //     vector<Limit *> list_of_limits = vector<Limit *>();
-    //     vector<Price *> list_of_prices = vector<Price *>();
-    // 
-    //     for (auto &pair : asks)
-    //     {
-    //         list_of_prices.push_back(pair.first);
-    //     }
-    // 
-    //     vector_sort(&list_of_prices, &reverse, 0, list_of_prices.size() - 1);
-    // 
-    //     for (auto &price : list_of_prices)
-    //     {
-    //         list_of_limits.push_back(asks[price]);
-    //     }
-    // 
-    //     return &list_of_limits;
-    // }
-    // vector<Limit *> *getBidLimits(bool reverse = false)
-    // {
-    //     // TODO : return a vector of limit pointers sorted in ascending order of price.
-    //     vector<Limit *> list_of_limits = vector<Limit *>();
-    //     vector<Price *> list_of_prices = vector<Price *>();
-    // 
-    //     for (auto &pair : bids)
-    //     {
-    //         list_of_prices.push_back(pair.first);
-    //     }
-    //  
-    //     vector_sort(&list_of_prices, &reverse, 0, list_of_prices.size() - 1);
-    // 
-    //     for (auto &price : list_of_prices)
-    //     {
-    //         list_of_limits.push_back(bids[price]);
-    //     }
-    // 
-    //     return &list_of_limits;
-    // }
     vector<Limit *> *getLimits(hashmap<Price*, Limit*> *bid_ask ,bool reverse = false)
     {
         // TODO : return a vector of limit pointers sorted in ascending order of price.
@@ -299,6 +187,19 @@ struct OrderBook
 
         return &list_of_limits;
     }
+    void limitsRefresher(){
+        refreshAsks();
+        refreshBids();
+    }
+    void refreshAsks(){
+        vector_merge(&asks_asc,&min_first,0,(asks_asc.size())/2, asks_asc.size());
+        linear_sort(&asks_asc,&asks_decs,&max_first);
+    }
+    void refreshBids(){
+        vector_merge(&bids_asc,&min_first,0,(bids_asc.size())/2, bids_asc.size());
+        linear_sort(&bids_asc,&bids_decs,&max_first);
+    }
+
 
     // Orderbook functionalities
     void addLimitOrder(Order *newOrder, Price *orderPrice)
@@ -351,4 +252,6 @@ struct OrderBook
         }
         }
     }
+
+
 };
