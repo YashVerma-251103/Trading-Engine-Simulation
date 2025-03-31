@@ -8,6 +8,7 @@
 #include <vector>
 #include <unordered_map>
 #include <string>
+#include <memory>
 
 // Namespace defines
 #define size_t std::size_t
@@ -16,6 +17,8 @@
 #define hashmap std::unordered_map
 #define string std::string
 #define spair std::pair
+#define shptr(Obj) std::make_shared<Obj>
+
 
 // utility macros
 #define print(obj) (std::cout << obj << std::endl)
@@ -37,6 +40,8 @@ enum BuyOrSell
 // #define min_first false
 bool min_first = false, max_first = true;
 
+
+// #define initial_order_book_price 0.0f
 struct Price
 {
     // Price Attributes
@@ -112,113 +117,3 @@ namespace std
     };
 
 } // namespace std
-
-
-
-
-
-// comman utilities
-// template <T>
-void vector_merge(vector<Price *> *list, bool *reverse, int start, int mid, int end)
-{
-    // new sorted vector
-    vector<Price *> sorted_list = vector<Price *>();
-
-    // merge 2 pointers
-    int i = start, j = mid;
-    Price *A, *B;
-    bool order = (*reverse) ? (*A > *B) : (*B > *A);
-    while (i < mid && j <= end)
-    {
-        A = (*list)[i];
-        B = (*list)[j];
-
-        if ((*A) == (*B))
-        {
-            sorted_list.push_back(A);
-            i++;
-            sorted_list.push_back(B);
-            j++;
-        }
-        else if (order)
-        {
-            sorted_list.push_back(B);
-            j++;
-        }
-        else
-        {
-            sorted_list.push_back(A);
-            i++;
-        }
-    }
-    free(A);
-    free(B);
-
-    // filling if some are left
-    while (reverse && j <= end)
-    {
-        sorted_list.push_back((*list)[j++]);
-    }
-    while (i < mid)
-    {
-        sorted_list.push_back((*list)[i++]);
-    }
-    while ((!reverse) && j <= end)
-    {
-        sorted_list.push_back((*list)[j++]);
-    }
-
-    // original filler loop
-    i = start;
-    for (const auto &price : sorted_list)
-    {
-        (*list)[i++] = price;
-    }
-
-    //  TODO :need to solve this problem
-    // i want to free the created vector but i am not able to.
-    // free(sorted_list);
-}
-void vector_sort(vector<Price *> *list, bool *reverse, int start, int end)
-{
-    if (start <= end)
-    {
-        // Single Element
-        if (start == end)
-        {
-            return;
-        }
-
-        int mid = (int)(((end - start) / 2) + start);
-        // left sort
-        vector_sort(list, reverse, start, mid);
-        // right sort
-        vector_sort(list, reverse, mid + 1, end);
-
-        // merging sorted lists
-        vector_merge(list, reverse, start, mid, end);
-    }
-}
-void linear_sort(vector<Price *> *list, vector<Price *> *sorted_list, bool *reverse)
-{
-    int len = list->size();
-    list->clear();
-    switch (*reverse)
-    {
-    case true:
-        for (auto i = 0; i < (len); i++)
-        {
-            list->push_back((*sorted_list)[i]);
-        }
-        break;
-    default:
-        for (auto i = len-1; i > (-1); i--)
-        {
-            list->push_back((*sorted_list)[i]);
-        }
-        break;
-    }
-}
-
-
-

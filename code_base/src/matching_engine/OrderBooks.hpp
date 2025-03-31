@@ -113,13 +113,115 @@ struct Limit
         }
         return filled;
     }
+
+    static void vector_merge(vector<Price *> *list, bool *reverse, int start, int mid, int end)
+    {
+        // new sorted vector
+        vector<Price *> sorted_list = vector<Price *>();
+
+        // merge 2 pointers
+        int i = start, j = mid;
+        Price *A, *B;
+        bool order = (*reverse) ? (*A > *B) : (*B > *A);
+        while (i < mid && j <= end)
+        {
+            A = (*list)[i];
+            B = (*list)[j];
+
+            if ((*A) == (*B))
+            {
+                sorted_list.push_back(A);
+                i++;
+                sorted_list.push_back(B);
+                j++;
+            }
+            else if (order)
+            {
+                sorted_list.push_back(B);
+                j++;
+            }
+            else
+            {
+                sorted_list.push_back(A);
+                i++;
+            }
+        }
+        free(A);
+        free(B);
+
+        // filling if some are left
+        while (reverse && j <= end)
+        {
+            sorted_list.push_back((*list)[j++]);
+        }
+        while (i < mid)
+        {
+            sorted_list.push_back((*list)[i++]);
+        }
+        while ((!reverse) && j <= end)
+        {
+            sorted_list.push_back((*list)[j++]);
+        }
+
+        // original filler loop
+        i = start;
+        for (const auto &price : sorted_list)
+        {
+            (*list)[i++] = price;
+        }
+
+        //  TODO :need to solve this problem
+        // i want to free the created vector but i am not able to.
+        // free(sorted_list);
+    }
+    static void Limit::vector_sort(vector<Price *> *list, bool *reverse, int start, int end)
+    {
+        if (start <= end)
+        {
+            // Single Element
+            if (start == end)
+            {
+                return;
+            }
+
+            int mid = (int)(((end - start) / 2) + start);
+            // left sort
+            Limit::vector_sort(list, reverse, start, mid);
+            // right sort
+            Limit::vector_sort(list, reverse, mid + 1, end);
+
+            // merging sorted lists
+            vector_merge(list, reverse, start, mid, end);
+        }
+    }
+    static void linear_sort(vector<Limit *> *list, vector<Limit *> *sorted_list, bool *reverse)
+    {
+        int len = list->size();
+        list->clear();
+        switch (*reverse)
+        {
+        case true:
+            for (auto i = 0; i < (len); i++)
+            {
+                list->push_back((*sorted_list)[i]);
+            }
+            break;
+
+        case false:
+            for (auto i = len - 1; i > (-1); i--)
+            {
+                list->push_back((*sorted_list)[i]);
+            }
+            break;
+        }
+    }
 };
 
 struct OrderBook
 {
     // OrderBook Attributes
     hashmap<Price *, Limit *> asks, bids;
-    vector<Limit *> asks_asc, asks_decs, bids_asc, bids_decs;
+    vector<Limit *> *asks_asc, *asks_decs, *bids_asc, *bids_decs;
 
     // hashmap functions
     hashmap<Price *, Limit *>::iterator begin(hashmap<Price *, Limit *> &orderMaps)
@@ -132,10 +234,10 @@ struct OrderBook
     {
         bids = hashmap<Price *, Limit *>();
         asks = hashmap<Price *, Limit *>();
-        bids_asc = vector<Limit *>();
-        bids_decs = vector<Limit *>();
-        asks_asc = vector<Limit *>();
-        asks_decs = vector<Limit *>();
+        bids_asc = &vector<Limit *>();
+        bids_decs = &vector<Limit *>();
+        asks_asc = &vector<Limit *>();
+        asks_decs = &vector<Limit *>();
     }
 
     // OrderBook utilities
@@ -158,6 +260,10 @@ struct OrderBook
         {
             print_ne("Current Price -> ");
             pair.first->printPrice();
+            if (pair.second->orders.empty())
+                print("Vector empty.");
+            else
+                print("Vector not empty.");
             pair.second->printCurrentOrders();
             print("\n\n");
         }
@@ -167,7 +273,7 @@ struct OrderBook
         printBidOrders();
         printAskOrders();
     }
-    vector<Limit *> *getLimits(hashmap<Price*, Limit*> *bid_ask ,bool reverse = false)
+    vector<Limit *> *getLimits(hashmap<Price *, Limit *> *bid_ask, bool reverse = false)
     {
         // TODO : return a vector of limit pointers sorted in ascending order of price.
         vector<Limit *> list_of_limits = vector<Limit *>();
@@ -178,7 +284,7 @@ struct OrderBook
             list_of_prices.push_back(pair.first);
         }
 
-        vector_sort(&list_of_prices, &reverse, 0, list_of_prices.size() - 1);
+        Limit::vector_sort(&list_of_prices, &reverse, 0, list_of_prices.size() - 1);
 
         for (auto &price : list_of_prices)
         {
@@ -187,19 +293,24 @@ struct OrderBook
 
         return &list_of_limits;
     }
-    void limitsRefresher(){
+
+    void limitsRefresher()
+    {
         refreshAsks();
         refreshBids();
     }
-    void refreshAsks(){
-        vector_merge(&asks_asc,&min_first,0,(asks_asc.size())/2, asks_asc.size());
-        linear_sort(&asks_asc,&asks_decs,&max_first);
+    // ? Buy Market order => wants to fill using cheapest price => ask limits in ascending order
+    void refreshAsks()
+    {
+        asks_decs = getLimits(&asks, max_first);
+        Limit::linear_sort(asks_asc, asks_decs, &min_first);
     }
-    void refreshBids(){
-        vector_merge(&bids_asc,&min_first,0,(bids_asc.size())/2, bids_asc.size());
-        linear_sort(&bids_asc,&bids_decs,&max_first);
+    // ? Sell Market order => wants to fill using highest price => ask limits in descending order
+    void refreshBids()
+    {
+        bids_asc = getLimits(&bids, min_first);
+        Limit::linear_sort(bids_decs, bids_asc, &max_first);
     }
-
 
     // Orderbook functionalities
     void addLimitOrder(Order *newOrder, Price *orderPrice)
@@ -207,27 +318,24 @@ struct OrderBook
         assert(newOrder != nullptr);
         assert(orderPrice != nullptr);
 
+        Limit temp = shptr(Limit)(orderPrice);
         switch (newOrder->type)
         {
         case Bid:
         {
-            // this will create a new limit at the price if it is not present so it saves time.
-            if (bids[orderPrice]->price->integral < 0)
-            {
-                bids[orderPrice]->updatePrice(orderPrice);
-            }
+            // Limit temp = Limit(orderPrice);
+            bids[orderPrice] = &temp;
+            // bids[orderPrice] = &(Limit(orderPrice));
             bids[orderPrice]->addOrder(newOrder);
-
             break;
         }
         case Ask:
         {
-            // this will create a new limit at the price if it is not present so it saves time.
-            if (asks[orderPrice]->price->integral < 0)
-            {
-                asks[orderPrice]->updatePrice(orderPrice);
-            }
+            // Limit temp = Limit(orderPrice);
+            asks[orderPrice] = &temp;
+            // asks[orderPrice] = &(Limit(orderPrice));
             asks[orderPrice]->addOrder(newOrder);
+            asks[orderPrice]->printCurrentOrders();
             break;
         }
         default:
@@ -239,19 +347,29 @@ struct OrderBook
     {
         // the major confusion i have -> since we are filling the market order using the highest limits first, then does it not mean that there is some missed amount of money as not all limits are of same price. but the market order is of fixed price.
 
+        vector<Limit *> *limits;
+
         switch (newOrder->type)
         {
         case Bid:
-        {
-
+            limits = asks_decs;
             break;
-        }
+        case Ask:
+            limits = bids_asc;
+            break;
         default:
-        {
+            limits = nullptr;
             break;
         }
+
+        assert(limits != nullptr);
+
+        // ! filling order
+        for (auto &limit : *limits)
+        {
+            limit->fillOrder(newOrder);
+            if (newOrder->isFilled())
+                break;
         }
     }
-
-
 };
